@@ -153,4 +153,4 @@ npm test             # run unit tests
 
 ## License
 
-GPL-3.0
+[MIT](LICENSE)
