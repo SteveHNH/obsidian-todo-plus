@@ -90,6 +90,25 @@ span.todo-plus-due-date.future {
 	background-color: var(--interactive-success, #6fdf94);
 }
 
+div.todo-plus-item.is-completed .todo-plus-item-description {
+	text-decoration: line-through;
+	color: var(--text-muted);
+}
+
+div.todo-plus-date-heading {
+	padding: 10px 10px 4px;
+	font-size: 0.8em;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+div.todo-plus-date-group + div.todo-plus-date-group > div.todo-plus-date-heading {
+	margin-top: 4px;
+}
+
 div.todo-plus-item-link {
 	flex-basis: 24px;
 	flex-shrink: 0;

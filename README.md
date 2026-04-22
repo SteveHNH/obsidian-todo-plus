@@ -5,7 +5,7 @@ GTD-style TODO management for [Obsidian](https://obsidian.md). Unlike other TODO
 ## Features
 
 - **Tag-gated filtering** — plain checkboxes are ignored; only items with `#todo/` tags appear in the panel
-- **4 GTD panes** — Inbox, Next, Waiting, and Someday/Maybe, each accessible from a tabbed sidebar
+- **5 tabbed panes** — Inbox, Next, Waiting, Someday/Maybe, and a **Done** tab that groups completed items by date
 - **Hotkey commands** — quickly insert pre-formatted todos with a single keystroke
 - **Live indexing** — changes anywhere in your vault are reflected in the sidebar immediately
 - **Due date tracking** — tag items with due dates and see overdue highlighting
@@ -106,9 +106,11 @@ You can complete a todo in two ways:
 1. **From the sidebar** — click the checkbox next to any item. The source file is updated automatically.
 2. **In the note** — change `[ ]` to `[x]` as usual. The sidebar updates in real time.
 
+Completed items are removed from their GTD pane and moved to the **Done** tab, where they are grouped by completion date (newest first). Add a `#todo/done:YYYY-MM-DD` tag to track when an item was finished — items without one appear under "No completion date". You can uncheck an item in the Done tab to send it back to its original pane.
+
 ### Sidebar
 
-The TODO+ panel opens in the right sidebar by default. It has four tabs across the top — click to switch between GTD panes. Each tab shows:
+The TODO+ panel opens in the right sidebar by default. It has five tabs across the top — click to switch between GTD panes or view completed items. Each tab shows:
 
 - A checkbox to toggle completion
 - The todo description (rendered as markdown)
@@ -138,9 +140,9 @@ A typical GTD processing session with TODO+:
    - Not now but maybe later? Change to `#todo/maybe`
    - Add a `#todo/due:YYYY-MM-DD` tag if there's a deadline
 
-3. **Execute** — work from the Next tab. Check items off as you complete them.
+3. **Execute** — work from the Next tab. Check items off as you complete them. Completed items move to the Done tab automatically.
 
-4. **Review** — periodically scan Waiting and Someday tabs to promote items back to Next or Inbox.
+4. **Review** — periodically scan Waiting, Someday, and Done tabs. Promote items back to Next or Inbox, or revisit what you've accomplished.
 
 ## Development
 

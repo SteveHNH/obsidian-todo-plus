@@ -8,6 +8,7 @@ enum TodoItemViewPane {
 	Next,
 	Waiting,
 	Someday,
+	Done,
 }
 
 export interface TodoItemViewProps {
@@ -85,6 +86,11 @@ export class TodoItemView extends ItemView {
 				icon: Icon.Someday,
 				label: "Someday",
 			},
+			{
+				pane: TodoItemViewPane.Done,
+				icon: Icon.Done,
+				label: "Done",
+			},
 		];
 
 		for (const tab of tabs) {
@@ -112,51 +118,105 @@ export class TodoItemView extends ItemView {
 			return;
 		}
 
-		for (const todo of filtered) {
-			container.createDiv("todo-plus-item", (el) => {
-				el.createDiv("todo-plus-item-checkbox", (checkEl) => {
-					checkEl.createEl("input", { type: "checkbox" }, (input) => {
-						input.checked = todo.status === TodoItemStatus.Done;
-						input.onClickEvent(() => {
-							const newStatus =
-								todo.status === TodoItemStatus.Done
-									? TodoItemStatus.Todo
-									: TodoItemStatus.Done;
-							this.props.toggleTodo(todo, newStatus);
-						});
-					});
-				});
+		if (this.activePane === TodoItemViewPane.Done) {
+			this.renderGroupedByDate(container, filtered);
+		} else {
+			for (const todo of filtered) {
+				this.renderTodoItem(container, todo);
+			}
+		}
+	}
 
-				el.createDiv("todo-plus-item-description", (descEl) => {
-					MarkdownRenderer.renderMarkdown(
-						todo.displayDescription,
-						descEl,
-						todo.sourceFilePath,
-						this,
-					);
+	private renderGroupedByDate(container: HTMLDivElement, todos: TodoItem[]): void {
+		const groups = new Map<string, TodoItem[]>();
+		for (const todo of todos) {
+			const key = todo.completedDate ?? "Unknown";
+			const group = groups.get(key);
+			if (group) {
+				group.push(todo);
+			} else {
+				groups.set(key, [todo]);
+			}
+		}
 
-					if (todo.dueDate) {
-						descEl.createSpan("todo-plus-due-date", (span) => {
-							const isOverdue = this.isOverdue(todo.dueDate!);
-							const isFuture = this.isFuture(todo.dueDate!);
-							if (isOverdue) span.classList.add("overdue");
-							if (isFuture) span.classList.add("future");
-							span.setText(todo.dueDate!);
-						});
-					}
-				});
+		const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+			if (a === "Unknown") return 1;
+			if (b === "Unknown") return -1;
+			return b.localeCompare(a);
+		});
 
-				el.createDiv("todo-plus-item-link", (linkEl) => {
-					linkEl.appendChild(RenderIcon(Icon.Reveal, "Open file"));
-					linkEl.onClickEvent(() => {
-						this.props.openFile(todo.sourceFilePath);
-					});
+		for (const key of sortedKeys) {
+			const label = key === "Unknown" ? "No completion date" : this.formatDateHeading(key);
+			container.createDiv("todo-plus-date-group", (groupEl) => {
+				groupEl.createDiv("todo-plus-date-heading", (headingEl) => {
+					headingEl.setText(label);
 				});
+				for (const todo of groups.get(key)!) {
+					this.renderTodoItem(groupEl, todo);
+				}
 			});
 		}
 	}
 
+	private formatDateHeading(dateStr: string): string {
+		const today = new Date().toISOString().split("T")[0]!;
+		const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0]!;
+		if (dateStr === today) return "Today";
+		if (dateStr === yesterday) return "Yesterday";
+		return dateStr;
+	}
+
+	private renderTodoItem(container: HTMLDivElement | HTMLElement, todo: TodoItem): void {
+		const completedClass = todo.status === TodoItemStatus.Done ? " is-completed" : "";
+		container.createDiv(`todo-plus-item${completedClass}`, (el) => {
+			el.createDiv("todo-plus-item-checkbox", (checkEl) => {
+				checkEl.createEl("input", { type: "checkbox" }, (input) => {
+					input.checked = todo.status === TodoItemStatus.Done;
+					input.onClickEvent(() => {
+						const newStatus =
+							todo.status === TodoItemStatus.Done
+								? TodoItemStatus.Todo
+								: TodoItemStatus.Done;
+						this.props.toggleTodo(todo, newStatus);
+					});
+				});
+			});
+
+			el.createDiv("todo-plus-item-description", (descEl) => {
+				MarkdownRenderer.renderMarkdown(
+					todo.displayDescription,
+					descEl,
+					todo.sourceFilePath,
+					this,
+				);
+
+				if (todo.dueDate) {
+					descEl.createSpan("todo-plus-due-date", (span) => {
+						const isOverdue = this.isOverdue(todo.dueDate!);
+						const isFuture = this.isFuture(todo.dueDate!);
+						if (isOverdue) span.classList.add("overdue");
+						if (isFuture) span.classList.add("future");
+						span.setText(todo.dueDate!);
+					});
+				}
+			});
+
+			el.createDiv("todo-plus-item-link", (linkEl) => {
+				linkEl.appendChild(RenderIcon(Icon.Reveal, "Open file"));
+				linkEl.onClickEvent(() => {
+					this.props.openFile(todo.sourceFilePath);
+				});
+			});
+		});
+	}
+
 	private filterForPane(todo: TodoItem): boolean {
+		if (this.activePane === TodoItemViewPane.Done) {
+			return todo.status === TodoItemStatus.Done;
+		}
+		if (todo.status === TodoItemStatus.Done) {
+			return false;
+		}
 		switch (this.activePane) {
 			case TodoItemViewPane.Inbox:
 				return todo.gtdState === GtdState.Inbox;
@@ -170,6 +230,14 @@ export class TodoItemView extends ItemView {
 	}
 
 	private sortTodos(a: TodoItem, b: TodoItem): number {
+		if (this.activePane === TodoItemViewPane.Done) {
+			if (a.completedDate && b.completedDate) {
+				return b.completedDate.localeCompare(a.completedDate);
+			}
+			if (a.completedDate) return -1;
+			if (b.completedDate) return 1;
+			return 0;
+		}
 		if (a.status !== b.status) {
 			return a.status === TodoItemStatus.Todo ? -1 : 1;
 		}
@@ -201,6 +269,8 @@ export class TodoItemView extends ItemView {
 				return "Nothing waiting. Add #todo/waiting to a checkbox item.";
 			case TodoItemViewPane.Someday:
 				return "No someday items. Add #todo/maybe to a checkbox item.";
+			case TodoItemViewPane.Done:
+				return "No completed items yet.";
 		}
 	}
 }
